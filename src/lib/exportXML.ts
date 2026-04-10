@@ -38,7 +38,7 @@ ${labelsXML}
 
   const xmlString = `<?xml version="1.0" encoding="utf-8"?>\n<file>\n  <ALL_INSTANCES>\n${instancesXML}\n  </ALL_INSTANCES>\n  <ROWS>\n${rowsXML}\n  </ROWS>\n</file>`;
 
-  const blob = new Blob([xmlString], { type: 'application/xml;charset=utf-8;' });
+  const blob = new Blob(['\uFEFF', xmlString], { type: 'application/xml;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.setAttribute('href', url);
