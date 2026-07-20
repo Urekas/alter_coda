@@ -120,6 +120,9 @@ export default function Canvas() {
         key={el.id}
         size={{ width: el.size.width, height: el.size.height }}
         position={{ x: el.position.x, y: el.position.y }}
+        onDragStart={() => {
+          if (mode === 'design') selectElement(el.id);
+        }}
         onDragStop={(e, d) => updateDecorativeElement(el.id, { position: { x: Math.round(d.x), y: Math.round(d.y) } })}
         onResizeStop={(e, dir, ref, delta, position) => {
           updateDecorativeElement(el.id, {
@@ -141,7 +144,19 @@ export default function Canvas() {
         }}
         className={isSelected && mode === 'design' ? 'ring-4 ring-blue-500 ring-offset-2 rounded-sm' : ''}
       >
-        <div style={baseStyle}>{content}</div>
+        <div 
+          style={baseStyle}
+          onTouchEnd={(e) => {
+            e.stopPropagation();
+            if (mode === 'design') {
+              selectElement(el.id);
+            } else if (mode === 'code' && el.type === 'counter') {
+              incrementCounter(el.id);
+            }
+          }}
+        >
+          {content}
+        </div>
       </Rnd>
     );
   };
@@ -159,6 +174,9 @@ export default function Canvas() {
             bounds="parent"
             size={{ width: el.width, height: el.height }}
             position={{ x: el.x, y: el.y }}
+            onDragStart={() => {
+              if (mode === 'design') selectElement(el.id);
+            }}
             onDragStop={(e, d) => updateElement(el.id, { x: Math.round(d.x), y: Math.round(d.y) })}
             onResizeStop={(e, dir, ref, delta, position) => {
               updateElement(el.id, { width: ref.offsetWidth, height: ref.offsetHeight, x: Math.round(position.x), y: Math.round(position.y) });
@@ -181,6 +199,7 @@ export default function Canvas() {
                 boxSizing: 'border-box'
               }}
               className={`transition-all select-none ${isActiveCode ? 'brightness-125' : ''} ${mode === 'code' && isRecording ? 'hover:shadow-lg hover:scale-[1.02] active:scale-95' : ''}`}
+              onTouchEnd={(e) => handleElementClick(e as unknown as React.MouseEvent, el)}
             >
               {el.type === 'row' ? el.code : el.text}
               {isActiveCode && <div className="absolute -top-2 -right-2 w-4 h-4 rounded-full bg-emerald-500 border-2 border-white animate-pulse" />}
