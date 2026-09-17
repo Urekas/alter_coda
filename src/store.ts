@@ -30,6 +30,16 @@ export interface LabelElement extends BaseElement {
 
 export type UIElement = RowElement | LabelElement;
 
+// 개인 코딩용 포지션 템플릿 — 필드에 나가는 라인업(GK/수비/미드필더/공격수) 인원수를
+// 지정하면 그 형태로 이벤트 박스를 자동 배치합니다. 교체 선수는 포메이션 형태가 없으니
+// 포함하지 않음 — 필요하면 기존 "+ Event" 버튼으로 따로 추가.
+export interface FormationConfig {
+  forwards: number;
+  midfielders: number;
+  defenders: number;
+  hasGoalkeeper: boolean;
+}
+
 export interface Shape {
   id: string;
   type: 'rect' | 'circle';
@@ -113,6 +123,7 @@ export interface CodaStoreState {
 
   setMode: (mode: 'design' | 'code' | 'timelines') => void;
   addElement: (type: ElementType) => void;
+  addFormation: (config: FormationConfig) => void;
   updateElement: (id: string, updates: Partial<UIElement>) => void;
   selectElement: (id: string | null) => void;
   deleteElement: (id: string) => void;
@@ -187,6 +198,58 @@ export const useCodaStore = create<CodaStoreState>()(
           return {
             elements: [...state.elements, newElement],
             selectedElementId: newId,
+          };
+        });
+      },
+
+      // 라인업 형태로 이벤트 박스를 한번에 배치 — 공격수는 위쪽, 골키퍼는 맨 아래 순으로
+      // 줄을 세우고, 한 줄 안에서는 가로로 균등 배치합니다. 실제 캔버스 크기를 알 수 없어서
+      // (컨테이너가 flex-1이라 렌더 전엔 픽셀값이 없음) 900x600 기준 가정 좌표로 생성 —
+      // 실제 화면이 다르면 배치 후 드래그로 조정하면 됨.
+      addFormation: (config) => {
+        set((state) => {
+          const { forwards, midfielders, defenders, hasGoalkeeper } = config;
+          const CANVAS_WIDTH = 900;
+          const TOP_MARGIN = 40;
+          const LINE_SPAN = 480; // 첫 줄~마지막 줄 사이 세로 거리
+          const BOX_WIDTH = 100;
+          const BOX_HEIGHT = 60;
+
+          const lines: { prefix: string; count: number; color: string }[] = [];
+          if (forwards > 0) lines.push({ prefix: 'FW', count: forwards, color: '#ef4444' });
+          if (midfielders > 0) lines.push({ prefix: 'MF', count: midfielders, color: '#22c55e' });
+          if (defenders > 0) lines.push({ prefix: 'DF', count: defenders, color: '#3b82f6' });
+          if (hasGoalkeeper) lines.push({ prefix: 'GK', count: 1, color: '#f59e0b' });
+
+          if (lines.length === 0) return state;
+
+          const lineGap = lines.length > 1 ? LINE_SPAN / (lines.length - 1) : 0;
+          let idCounter = Date.now();
+          const newElements: RowElement[] = [];
+
+          lines.forEach((line, lineIndex) => {
+            const y = TOP_MARGIN + lineIndex * lineGap;
+            const spacing = CANVAS_WIDTH / (line.count + 1);
+            for (let i = 0; i < line.count; i++) {
+              const x = spacing * (i + 1) - BOX_WIDTH / 2;
+              newElements.push({
+                id: (idCounter++).toString(),
+                type: 'row',
+                x: Math.round(x),
+                y: Math.round(y),
+                width: BOX_WIDTH,
+                height: BOX_HEIGHT,
+                code: line.count === 1 ? line.prefix : `${line.prefix}${i + 1}`,
+                color: line.color,
+                leadTime: 0,
+                lagTime: 0,
+              });
+            }
+          });
+
+          return {
+            elements: [...state.elements, ...newElements],
+            selectedElementId: null,
           };
         });
       },

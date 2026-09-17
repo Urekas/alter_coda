@@ -6,11 +6,11 @@ import Inspector from '../components/Inspector';
 import TemplateSidebar from '../components/TemplateSidebar';
 import { useCodaStore } from '../store';
 import { exportToSportsCodeXML } from '../lib/exportXML';
-import { Download, Upload, Play, Square, Plus, Settings2, Code2, ListVideo, Trash2, Square as SquareIcon, Circle, Type, Hash } from 'lucide-react';
+import { Download, Upload, Play, Square, Plus, Settings2, Code2, ListVideo, Trash2, Square as SquareIcon, Circle, Type, Hash, Users } from 'lucide-react';
 
 export default function Home() {
-  const { 
-    mode, setMode, addElement, addDecorativeElement, getInstances, getRows, 
+  const {
+    mode, setMode, addElement, addFormation, addDecorativeElement, getInstances, getRows,
     startRecording, stopRecording, timerStatus, currentTime,
     matches, currentMatchId, createNewMatch, deleteMatch,
     elements, loadForm, undoLastAction, activeRows
@@ -18,6 +18,8 @@ export default function Home() {
 
   const [showMatchPrompt, setShowMatchPrompt] = useState(false);
   const [newMatchName, setNewMatchName] = useState('');
+  const [showFormationPrompt, setShowFormationPrompt] = useState(false);
+  const [formationConfig, setFormationConfig] = useState({ forwards: 3, midfielders: 4, defenders: 3, hasGoalkeeper: true });
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const handleExportForm = () => {
@@ -90,6 +92,12 @@ export default function Home() {
     }
   };
 
+  const handleCreateFormation = (e: React.FormEvent) => {
+    e.preventDefault();
+    addFormation(formationConfig);
+    setShowFormationPrompt(false);
+  };
+
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-white text-gray-900 font-sans">
       <header className="h-auto py-2 border-b border-gray-200 px-6 flex items-center justify-between bg-white z-20 shadow-sm flex-wrap gap-2">
@@ -131,7 +139,8 @@ export default function Home() {
               
               <button className="px-3 py-1.5 bg-blue-50 border border-blue-200 text-blue-700 hover:bg-blue-100 rounded text-xs font-bold transition-all flex items-center gap-1 shadow-sm" onClick={() => addElement('row')}><Plus className="w-3 h-3" /> Event</button>
               <button className="px-3 py-1.5 bg-indigo-50 border border-indigo-200 text-indigo-700 hover:bg-indigo-100 rounded text-xs font-bold transition-all flex items-center gap-1 shadow-sm" onClick={() => addElement('label')}><Plus className="w-3 h-3" /> Tag</button>
-              
+              <button className="px-3 py-1.5 bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 rounded text-xs font-bold transition-all flex items-center gap-1 shadow-sm" title="포지션별로 이벤트 박스 한번에 배치" onClick={() => setShowFormationPrompt(true)}><Users className="w-3 h-3" /> 포메이션</button>
+
               <div className="h-6 w-px bg-gray-300 mx-1"></div>
               
               <button className="p-1.5 bg-gray-50 border border-gray-200 text-gray-700 hover:bg-gray-100 rounded transition-all shadow-sm" title="사각형" onClick={() => addDecorativeElement('rect')}><SquareIcon className="w-4 h-4" /></button>
@@ -245,6 +254,40 @@ export default function Home() {
                 <div className="flex gap-3 justify-end">
                   <button type="button" onClick={() => setShowMatchPrompt(false)} className="px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">Cancel</button>
                   <button type="submit" className="px-4 py-2 text-sm font-semibold bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-sm transition-colors">Start Tracking</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {showFormationPrompt && (
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center">
+            <div className="bg-white p-6 rounded-2xl shadow-xl w-[420px]">
+              <h3 className="text-lg font-bold text-gray-900 mb-2">포메이션 템플릿 생성</h3>
+              <p className="text-sm text-gray-500 mb-5">필드에 나가는 선발 라인업 인원수를 입력하면 위치별로 이벤트 박스를 자동 배치합니다. 교체 선수는 생성 후 &apos;+ Event&apos;로 따로 추가하세요.</p>
+              <form onSubmit={handleCreateFormation}>
+                <div className="grid grid-cols-3 gap-3 mb-4">
+                  <label className="text-xs font-bold text-red-600">
+                    공격수 (FW)
+                    <input type="number" min={0} max={10} value={formationConfig.forwards} onChange={e => setFormationConfig({ ...formationConfig, forwards: parseInt(e.target.value) || 0 })} className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
+                  </label>
+                  <label className="text-xs font-bold text-emerald-600">
+                    미드필더 (MF)
+                    <input type="number" min={0} max={10} value={formationConfig.midfielders} onChange={e => setFormationConfig({ ...formationConfig, midfielders: parseInt(e.target.value) || 0 })} className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
+                  </label>
+                  <label className="text-xs font-bold text-blue-600">
+                    수비수 (DF)
+                    <input type="number" min={0} max={10} value={formationConfig.defenders} onChange={e => setFormationConfig({ ...formationConfig, defenders: parseInt(e.target.value) || 0 })} className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
+                  </label>
+                </div>
+                <label className="flex items-center gap-2 text-sm font-semibold text-amber-600 mb-5">
+                  <input type="checkbox" checked={formationConfig.hasGoalkeeper} onChange={e => setFormationConfig({ ...formationConfig, hasGoalkeeper: e.target.checked })} className="w-4 h-4" />
+                  골키퍼 (GK) 포함
+                </label>
+                <p className="text-xs text-gray-400 mb-5">총 {formationConfig.forwards + formationConfig.midfielders + formationConfig.defenders + (formationConfig.hasGoalkeeper ? 1 : 0)}명 생성됨</p>
+                <div className="flex gap-3 justify-end">
+                  <button type="button" onClick={() => setShowFormationPrompt(false)} className="px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">Cancel</button>
+                  <button type="submit" className="px-4 py-2 text-sm font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg shadow-sm transition-colors">생성</button>
                 </div>
               </form>
             </div>

@@ -38,7 +38,9 @@ ${labelsXML}
 
   const xmlString = `<?xml version="1.0" encoding="UTF-8"?>\n<file>\n  <ALL_INSTANCES>\n${instancesXML}\n  </ALL_INSTANCES>\n  <ROWS>\n${rowsXML}\n  </ROWS>\n</file>`;
 
-  const blob = new Blob([xmlString], { type: 'application/xml;charset=utf-8;' });
+  // UTF-8 BOM — 이거 없으면 실제 Sportscode/다른 도구에서 한글 코드/라벨이 깨짐
+  // (이전에 17420a6에서 고쳤던 건데 그 뒤 "Add files via upload" 커밋이 되돌려놔서 복구함).
+  const blob = new Blob(['﻿', xmlString], { type: 'application/xml;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.setAttribute('href', url);
