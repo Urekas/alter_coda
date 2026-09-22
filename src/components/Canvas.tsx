@@ -144,9 +144,13 @@ export default function Canvas() {
         }}
         className={isSelected && mode === 'design' ? 'ring-4 ring-blue-500 ring-offset-2 rounded-sm' : ''}
       >
-        <div 
+        <div
           style={baseStyle}
           onTouchEnd={(e) => {
+            // 터치 후에는 브라우저가 합성 click 이벤트를 한 번 더 쏴서(같은 요소에 있는
+            // onClick까지) 탭 한 번에 두 번 실행되는 문제가 있었음 — preventDefault로 그
+            // 뒤따르는 합성 click을 막음("두배씩 들어감" 버그 원인).
+            e.preventDefault();
             e.stopPropagation();
             if (mode === 'design') {
               selectElement(el.id);
@@ -199,7 +203,12 @@ export default function Canvas() {
                 boxSizing: 'border-box'
               }}
               className={`transition-all select-none ${isActiveCode ? 'brightness-125' : ''} ${mode === 'code' && isRecording ? 'hover:shadow-lg hover:scale-[1.02] active:scale-95' : ''}`}
-              onTouchEnd={(e) => handleElementClick(e as unknown as React.MouseEvent, el)}
+              onTouchEnd={(e) => {
+                // 위와 동일한 이유 — 터치 뒤따르는 합성 click(같은 요소의 onClick)까지
+                // 두 번 실행되는 걸 막음.
+                e.preventDefault();
+                handleElementClick(e as unknown as React.MouseEvent, el);
+              }}
             >
               {el.type === 'row' ? el.code : el.text}
               {isActiveCode && <div className="absolute -top-2 -right-2 w-4 h-4 rounded-full bg-emerald-500 border-2 border-white animate-pulse" />}
